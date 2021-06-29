@@ -146,6 +146,12 @@ func SendToAliveSessions(m Messagable) (err error) {
 	for _, sessionID := range sessionIDs {
 		msg := NewMessage()
 		baseMsg.CopyInto(msg)
+		var msgType FIXString
+		if tmpErr := baseMsg.Header.GetField(tagMsgType, &msgType); tmpErr != nil {
+			errorByID.ErrorMap[sessionID] = tmpErr
+			continue
+		}
+		msg.Header.SetField(tagMsgType, msgType)
 		msg = fillHeaderBySessionID(msg, sessionID)
 		tmpErr := SendToAliveSession(msg, sessionID)
 		if tmpErr != nil {
