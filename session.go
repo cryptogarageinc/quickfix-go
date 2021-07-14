@@ -46,6 +46,7 @@ type session struct {
 	messagePool
 	timestampPrecision TimestampPrecision
 	linkedAcceptor     *Acceptor
+	stateChangeChan    chan<- SessionID
 }
 
 func (s *session) logError(err error) {
@@ -767,10 +768,19 @@ func (s *session) run() {
 			s.SendAppMessages(s)
 
 		case fixIn, ok := <-s.messageIn:
+			isChangeState := false
 			if !ok {
 				s.Disconnected(s)
 			} else {
+				oldState := s.stateMachine.State
 				s.Incoming(s, fixIn)
+
+				if oldState != s.stateMachine.State {
+					isChangeState = true
+				}
+			}
+			if isChangeState && s.stateChangeChan != nil {
+				s.stateChangeChan <- s.sessionID
 			}
 
 		case evt := <-s.sessionEvent:

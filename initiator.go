@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/tls"
 	"errors"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -23,11 +24,25 @@ type Initiator struct {
 	wg              sync.WaitGroup
 	sessions        map[SessionID]*session
 	sessionFactory
+
+	// append member
+	stateChangeChan chan SessionID
+	registerChan    chan notifyRequestData
+	unregisterChan  chan uint64
+	notifyCounter   uint64
+	counterMap      map[uint64]bool
+	counterMutex    sync.Mutex
 }
 
 //Start Initiator.
 func (i *Initiator) Start() (err error) {
 	i.stopChan = make(chan interface{})
+	i.stateChangeChan = make(chan SessionID)
+	i.registerChan = make(chan notifyRequestData)
+	i.unregisterChan = make(chan uint64)
+
+	i.wg.Add(1)
+	go i.checkStateLoop()
 
 	for sessionID, settings := range i.sessionSettings {
 		//TODO: move into session factory
@@ -43,6 +58,7 @@ func (i *Initiator) Start() (err error) {
 
 		i.wg.Add(1)
 		go func(sessID SessionID) {
+			i.sessions[sessID].stateChangeChan = i.stateChangeChan
 			i.handleConnection(i.sessions[sessID], tlsConfig, dialer)
 			i.wg.Done()
 		}(sessionID)
@@ -53,6 +69,11 @@ func (i *Initiator) Start() (err error) {
 
 //Stop Initiator.
 func (i *Initiator) Stop() {
+	defer func() {
+		close(i.stateChangeChan)
+		close(i.registerChan)
+		close(i.unregisterChan)
+	}()
 	select {
 	case <-i.stopChan:
 		//closed already
@@ -73,6 +94,7 @@ func NewInitiator(app Application, storeFactory MessageStoreFactory, appSettings
 		logFactory:      logFactory,
 		sessions:        make(map[SessionID]*session),
 		sessionFactory:  sessionFactory{true},
+		counterMap:      make(map[uint64]bool),
 	}
 
 	var err error
@@ -204,6 +226,76 @@ func (i *Initiator) handleConnection(session *session, tlsConfig *tls.Config, di
 
 // append API ------------------------------------------------------------------
 
+var ErrWaitCancel = errors.New("wait cancel")
+var ErrWaitTimeout = errors.New("wait timeout")
+var ErrInternalError = errors.New("internal error")
+
+type notifyCheckResponse struct {
+	canSendResponse bool
+	err             error
+}
+
+type notifyRequestData struct {
+	id        uint64
+	checkFunc func(SessionID) notifyCheckResponse
+	response  chan error
+}
+
+func (i *Initiator) checkStateLoop() {
+	defer i.wg.Done()
+	notifyMap := make(map[uint64]notifyRequestData)
+
+	for {
+		select {
+		case <-i.stopChan:
+			return
+		case data, ok := <-i.registerChan:
+			if ok {
+				notifyMap[data.id] = data
+			}
+		case id, ok := <-i.unregisterChan:
+			if ok {
+				delete(notifyMap, id)
+			}
+		case sessionID, ok := <-i.stateChangeChan:
+			if !ok {
+				// do nothing
+			} else if sess, exist := i.sessions[sessionID]; exist && sess.IsLoggedOn() {
+				for _, data := range notifyMap {
+					if resp := data.checkFunc(sessionID); resp.canSendResponse {
+						data.response <- resp.err
+					}
+				}
+			}
+		}
+	}
+}
+
+func (i *Initiator) keepNotifyCounter() uint64 {
+	i.counterMutex.Lock()
+	defer i.counterMutex.Unlock()
+	count := i.notifyCounter
+	for {
+		if count < math.MaxUint64 {
+			count++
+		} else {
+			count = 1
+		}
+		_, ok := i.counterMap[count]
+		if !ok {
+			i.counterMap[count] = true
+			i.notifyCounter = count
+			return count
+		}
+	}
+}
+
+func (i *Initiator) releaseNotifyCounter(count uint64) {
+	i.counterMutex.Lock()
+	defer i.counterMutex.Unlock()
+	delete(i.counterMap, count)
+}
+
 // GetAliveSessionIDs This function returns loggedOn sessionID list.
 func (i *Initiator) GetAliveSessionIDs() []SessionID {
 	sessionIds := make([]SessionID, 0, len(i.sessions))
@@ -243,4 +335,99 @@ func (i *Initiator) SendToAliveSessions(m Messagable) (err error) {
 		errObj.error = errors.New("failed to SendToAliveSessions")
 	}
 	return err
+}
+
+// WaitForAliveSessionFirst This function wait for the session to become alive first.
+func (i *Initiator) WaitForAliveSessionFirst() error {
+	return i.WaitForAliveSessionFirstTimeout(time.Hour * 24 * 365 * 10)
+}
+
+// WaitForAliveSessionFirstTimeout This function wait for the session to become alive first.
+func (i *Initiator) WaitForAliveSessionFirstTimeout(timeout time.Duration) error {
+	sessions := i.GetAliveSessionIDs()
+	if len(sessions) > 0 {
+		return nil
+	}
+	data := notifyRequestData{
+		id: i.keepNotifyCounter(),
+		checkFunc: func(_sessionId SessionID) notifyCheckResponse {
+			sessions := i.GetAliveSessionIDs()
+			resp := notifyCheckResponse{}
+			if len(sessions) > 0 {
+				resp.canSendResponse = true
+			}
+			return resp
+		},
+	}
+	defer i.releaseNotifyCounter(data.id)
+	return i.waitForAliveSessionTimeout(data, timeout)
+}
+
+// WaitForAliveSessionAll This function wait for all sessions to become alive.
+func (i *Initiator) WaitForAliveSessionAll() error {
+	return i.WaitForAliveSessionAllTimeout(time.Hour * 24 * 365 * 10)
+}
+
+// WaitForAliveSessionAllTimeout This function wait for all sessions to become alive.
+func (i *Initiator) WaitForAliveSessionAllTimeout(timeout time.Duration) error {
+	sessions := i.GetAliveSessionIDs()
+	if len(sessions) == len(i.sessions) {
+		return nil
+	}
+	data := notifyRequestData{
+		id: i.keepNotifyCounter(),
+		checkFunc: func(_sessionId SessionID) notifyCheckResponse {
+			sessions := i.GetAliveSessionIDs()
+			resp := notifyCheckResponse{}
+			if len(sessions) == len(i.sessions) {
+				resp.canSendResponse = true
+			}
+			return resp
+		},
+	}
+	defer i.releaseNotifyCounter(data.id)
+	return i.waitForAliveSessionTimeout(data, timeout)
+}
+
+// waitForAliveSessionTimeout This function wait for sessions to become alive.
+func (i *Initiator) waitForAliveSessionTimeout(req notifyRequestData, timeout time.Duration) error {
+	select {
+	case <-i.stopChan:
+		return ErrWaitCancel //closed already
+	default:
+	}
+	data := req
+	data.response = make(chan error)
+	defer close(data.response)
+
+	i.registerChan <- data
+	defer func() {
+		select {
+		case <-i.stopChan:
+			// closed already
+			break
+		default:
+			i.unregisterChan <- data.id
+		}
+	}()
+
+	waitTimer := time.NewTimer(timeout)
+	defer waitTimer.Stop()
+	var err error
+
+	select {
+	case <-i.stopChan:
+		err = ErrWaitCancel
+		return err
+	case resp, ok := <-data.response:
+		if ok {
+			err = resp
+		} else {
+			err = ErrInternalError
+		}
+		return err
+	case <-waitTimer.C:
+		err = ErrWaitTimeout
+		return err
+	}
 }
