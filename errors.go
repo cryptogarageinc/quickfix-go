@@ -182,7 +182,7 @@ func NewOtherRejectError(err string) MessageRejectError {
 	return messageRejectError{text: err, rejectReason: rejectReasonOther}
 }
 
-//NewOtherBusinessRejectError returns a business MessageRejectError with the given error message
+//NewOtherBusinessRejectError returns a BusinessMessageRejectError with the given error message
 func NewOtherBusinessRejectError(err string) MessageRejectError {
 	return NewBusinessMessageRejectError(err, businessRejectReasonOther, nil)
 }
