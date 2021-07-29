@@ -302,12 +302,12 @@ func TestNewOtherRejectError(t *testing.T) {
 	}
 }
 
-func TestNewBusinessOtherRejectError(t *testing.T) {
+func TestNewOtherBusinessRejectError(t *testing.T) {
 	var (
 		expectedErrorString  = "Custom error"
 		expectedRejectReason = 0
 	)
-	msgRej := NewBusinessOtherRejectError(expectedErrorString)
+	msgRej := NewOtherBusinessRejectError(expectedErrorString)
 
 	if strings.Compare(msgRej.Error(), expectedErrorString) != 0 {
 		t.Errorf("expected: %s, got: %s\n", expectedErrorString, msgRej.Error())
@@ -319,6 +319,6 @@ func TestNewBusinessOtherRejectError(t *testing.T) {
 		t.Errorf("expected: nil, got: %d\n", *msgRej.RefTagID())
 	}
 	if !msgRej.IsBusinessReject() {
-		t.Error("Expected IsBusinessReject to be false\n")
+		t.Error("Expected IsBusinessReject to be true\n")
 	}
 }
