@@ -301,3 +301,24 @@ func TestNewOtherRejectError(t *testing.T) {
 		t.Error("Expected IsBusinessReject to be false\n")
 	}
 }
+
+func TestNewBusinessOtherRejectError(t *testing.T) {
+	var (
+		expectedErrorString  = "Custom error"
+		expectedRejectReason = 0
+	)
+	msgRej := NewBusinessOtherRejectError(expectedErrorString)
+
+	if strings.Compare(msgRej.Error(), expectedErrorString) != 0 {
+		t.Errorf("expected: %s, got: %s\n", expectedErrorString, msgRej.Error())
+	}
+	if msgRej.RejectReason() != expectedRejectReason {
+		t.Errorf("expected: %d, got: %d\n", expectedRejectReason, msgRej.RejectReason())
+	}
+	if msgRej.RefTagID() != nil {
+		t.Errorf("expected: nil, got: %d\n", *msgRej.RefTagID())
+	}
+	if !msgRej.IsBusinessReject() {
+		t.Error("Expected IsBusinessReject to be false\n")
+	}
+}
