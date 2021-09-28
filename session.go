@@ -742,11 +742,25 @@ func (s *session) onAdmin(msg interface{}) {
 func (s *session) run() {
 	s.Start(s)
 
-	s.stateTimer = internal.NewEventTimer(func() { s.sessionEvent <- internal.NeedHeartbeat })
-	s.peerTimer = internal.NewEventTimer(func() { s.sessionEvent <- internal.PeerTimeout })
+	// https://github.com/quickfixgo/quickfix/pull/452
+	done := make(chan struct{})
+
+	s.stateTimer = internal.NewEventTimer(func() {
+		select {
+		case <-done:
+		case s.sessionEvent <- internal.NeedHeartbeat:
+		}
+	})
+	s.peerTimer = internal.NewEventTimer(func() {
+		select {
+		case <-done:
+		case s.sessionEvent <- internal.PeerTimeout:
+		}
+	})
 	ticker := time.NewTicker(time.Second)
 
 	defer func() {
+		close(done)
 		s.log.OnEvent("run defer start")
 		s.stateTimer.Stop()
 		s.log.OnEvent("run defer stateTimer end")
