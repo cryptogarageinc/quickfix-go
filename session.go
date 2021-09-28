@@ -83,6 +83,7 @@ func (s *session) connect(msgIn <-chan fixIn, msgOut chan<- []byte) error {
 type stopReq struct{}
 
 func (s *session) stop() {
+	s.log.OnEvent("stop")
 	s.admin <- stopReq{}
 }
 
@@ -775,6 +776,7 @@ func (s *session) run() {
 		}
 	}
 
+	s.log.OnEvent("run finish")
 	if s.stoppedSessionKeepTime == 0 {
 		s.close()
 	} else {
