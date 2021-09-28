@@ -137,16 +137,17 @@ func (sm *stateMachine) CheckSessionTime(session *session, now time.Time) {
 
 func (sm *stateMachine) setState(session *session, nextState sessionState) {
 	if !nextState.IsConnected() {
-		if sm.IsConnected() {
+		if sm.IsConnected() || session.hasDisconnectOnLogout {
 			sm.handleDisconnectState(session)
 		}
 
-		if sm.pendingStop {
+		if sm.pendingStop || session.hasDisconnectOnLogout {
 			sm.stopped = true
 			sm.notifyInSessionTime()
 		}
 	}
 
+	session.log.OnEventf("setState:", sm.State, nextState)
 	sm.State = nextState
 }
 

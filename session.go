@@ -50,6 +50,7 @@ type session struct {
 	notifyLogonEvent       chan struct{}
 	stoppedSessionKeepTime time.Duration
 	stopTime               time.Time
+	hasDisconnectOnLogout  bool
 }
 
 func (s *session) logError(err error) {

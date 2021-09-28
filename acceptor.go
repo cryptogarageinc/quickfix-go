@@ -343,6 +343,7 @@ func (a *Acceptor) handleConnection(netConn net.Conn) {
 			a.globalLog.OnEventf("Dynamic session %v failed to create: %v", sessID, err)
 			return
 		}
+		dynamicSession.hasDisconnectOnLogout = true
 		dynamicSession.linkedAcceptor = a
 		dynamicSession.stoppedSessionKeepTime = a.dynamicStoppedSessionKeepTime
 
