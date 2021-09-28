@@ -747,9 +747,13 @@ func (s *session) run() {
 	ticker := time.NewTicker(time.Second)
 
 	defer func() {
+		s.log.OnEvent("run defer start")
 		s.stateTimer.Stop()
+		s.log.OnEvent("run defer stateTimer end")
 		s.peerTimer.Stop()
+		s.log.OnEvent("run defer peerTimer end")
 		ticker.Stop()
+		s.log.OnEvent("run defer end")
 	}()
 
 	for !s.Stopped() {
@@ -776,12 +780,13 @@ func (s *session) run() {
 		}
 	}
 
-	s.log.OnEvent("run finish")
+	s.log.OnEvent("run finish start")
 	if s.stoppedSessionKeepTime == 0 {
 		s.close()
 	} else {
 		s.stopTime = time.Now().UTC()
 	}
+	s.log.OnEvent("run finish end")
 }
 
 // append API ------------------------------------------------------------------
