@@ -391,7 +391,9 @@ LOOP:
 			sessions[sessionID] = session
 			go func() {
 				session.run()
+				a.globalLog.OnEventf("Unregister dynamic session start: %v", session.sessionID)
 				err := UnregisterSession(session.sessionID)
+				a.globalLog.OnEventf("Unregister dynamic session finish: %v", session.sessionID)
 				if err != nil {
 					a.globalLog.OnEventf("Unregister dynamic session %v failed: %v", session.sessionID, err)
 					return
