@@ -373,6 +373,7 @@ func (a *Acceptor) handleConnection(netConn net.Conn) {
 			session.log.OnEventf("net.Close error: %v", tmpErr)
 		}
 	}
+	session.log.OnEvent("handleConnection finish")
 }
 
 func (a *Acceptor) dynamicSessionsLoop() {

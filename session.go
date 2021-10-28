@@ -693,9 +693,10 @@ func (s *session) onDisconnect() {
 	case <-s.notifyLogonEvent: // cleanup single buffer
 	default:
 	}
-	if s.hasStopByDisconnect {
+	if s.hasStopByDisconnect && !s.stopped {
 		s.stop()
 	}
+	s.log.OnEvent("onDisconnect finish")
 }
 
 func (s *session) onAdmin(msg interface{}) {
@@ -766,6 +767,7 @@ func (s *session) run() {
 		s.stateTimer.Stop()
 		s.peerTimer.Stop()
 		ticker.Stop()
+		s.log.OnEvent("run defer finish")
 	}()
 
 	for !s.Stopped() {
@@ -791,12 +793,14 @@ func (s *session) run() {
 			s.CheckSessionTime(s, now)
 		}
 	}
+	s.log.OnEvent("run loop end")
 
 	if s.stoppedSessionKeepTime == 0 {
 		s.close()
 	} else {
 		s.stopTime = time.Now().UTC()
 	}
+	s.log.OnEvent("run finish")
 }
 
 // append API ------------------------------------------------------------------
