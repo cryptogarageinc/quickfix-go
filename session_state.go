@@ -46,6 +46,7 @@ func (sm *stateMachine) Connect(session *session) {
 }
 
 func (sm *stateMachine) Stop(session *session) {
+	session.log.OnEvent("call Stop")
 	sm.pendingStop = true
 	sm.setState(session, sm.State.Stop(session))
 }

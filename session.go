@@ -50,6 +50,7 @@ type session struct {
 	notifyLogonEvent       chan struct{}
 	stoppedSessionKeepTime time.Duration
 	stopTime               time.Time
+	hasStopByDisconnect    bool
 }
 
 func (s *session) logError(err error) {
@@ -691,6 +692,9 @@ func (s *session) onDisconnect() {
 	select {
 	case <-s.notifyLogonEvent: // cleanup single buffer
 	default:
+	}
+	if s.hasStopByDisconnect {
+		s.stop()
 	}
 }
 
