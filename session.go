@@ -694,8 +694,11 @@ func (s *session) onDisconnect() {
 	default:
 	}
 	if s.hasStopByDisconnect && !s.stopped {
-		s.log.OnEvent("onDisconnect call stop")
-		s.stop()
+		s.log.OnEvent("onDisconnect call Stop")
+		// s.stop()
+		// direct
+		s.stopped = true
+		s.notifyInSessionTime()
 	}
 	s.log.OnEvent("onDisconnect finish")
 }
