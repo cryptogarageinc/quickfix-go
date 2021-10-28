@@ -351,6 +351,7 @@ func (a *Acceptor) handleConnection(netConn net.Conn) {
 		session = dynamicSession
 		defer session.stop()
 	}
+	defer session.log.OnEvent("handleConnection defer")
 
 	msgIn := make(chan fixIn)
 	msgOut := make(chan []byte)

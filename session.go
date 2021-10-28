@@ -681,7 +681,6 @@ func (s *session) onDisconnect() {
 			s.logError(err)
 		}
 	}
-	s.log.OnEvent("onDisconnect check messageOut")
 
 	if s.messageOut != nil {
 		close(s.messageOut)
@@ -689,13 +688,13 @@ func (s *session) onDisconnect() {
 	}
 
 	s.messageIn = nil
-	s.log.OnEvent("onDisconnect check notifyLogonEvent")
 
 	select {
 	case <-s.notifyLogonEvent: // cleanup single buffer
 	default:
 	}
 	if s.hasStopByDisconnect && !s.stopped {
+		s.log.OnEvent("onDisconnect call stop")
 		s.stop()
 	}
 	s.log.OnEvent("onDisconnect finish")
