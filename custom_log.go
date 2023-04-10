@@ -60,7 +60,7 @@ func (f customLogFactory) CreateSessionLog(sessionID SessionID) (Log, error) {
 }
 
 // NewCustomLogFactory creates an instance of LogFactory that
-// logs messages and events using the provided log function
+// logs messages and events using the provided log function.
 func NewCustomLogFactory(
 	logFunc func(prefix, msg string, keysAndValues ...LogParam),
 	logErrorFunc func(prefix, msg string, err error, keysAndValues ...LogParam),

@@ -1,3 +1,18 @@
+// Copyright (c) quickfixengine.org  All rights reserved.
+//
+// This file may be distributed under the terms of the quickfixengine.org
+// license as defined by quickfixengine.org and appearing in the file
+// LICENSE included in the packaging of this file.
+//
+// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
+// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE.
+//
+// See http://www.quickfixengine.org/LICENSE for licensing information.
+//
+// Contact ask@quickfixengine.org if any conditions of this licensing
+// are not clear to you.
+
 package quickfix
 
 import (
@@ -9,16 +24,19 @@ func makeReadable(s []byte) string {
 	return string(bytes.Replace(s, []byte("\x01"), []byte("|"), -1))
 }
 
+// LogParam ...
 type LogParam struct {
 	Name   string
 	Value  interface{}
 	format string
 }
 
+// GetFormat ...
 func (l LogParam) GetFormat() string {
 	return l.format
 }
 
+// String ...
 func (l LogParam) String() string {
 	switch l.format {
 	case "%s":
@@ -34,6 +52,7 @@ func (l LogParam) String() string {
 	}
 }
 
+// LogMessage ...
 func LogMessage(name string, msgBytes []byte) LogParam {
 	return LogParam{
 		Name:   name,
@@ -42,6 +61,7 @@ func LogMessage(name string, msgBytes []byte) LogParam {
 	}
 }
 
+// LogString ...
 func LogString(name, value string) LogParam {
 	return LogParam{
 		Name:   name,
@@ -50,6 +70,7 @@ func LogString(name, value string) LogParam {
 	}
 }
 
+// LogStringWithSingleQuote ...
 func LogStringWithSingleQuote(name, value string) LogParam {
 	return LogParam{
 		Name:   name,
@@ -58,6 +79,7 @@ func LogStringWithSingleQuote(name, value string) LogParam {
 	}
 }
 
+// LogInt ...
 func LogInt(name string, value int) LogParam {
 	return LogParam{
 		Name:   name,
@@ -66,6 +88,7 @@ func LogInt(name string, value int) LogParam {
 	}
 }
 
+// LogInt64 ...
 func LogInt64(name string, value int64) LogParam {
 	return LogParam{
 		Name:   name,
@@ -74,6 +97,7 @@ func LogInt64(name string, value int64) LogParam {
 	}
 }
 
+// LogUint64 ...
 func LogUint64(name string, value uint64) LogParam {
 	return LogParam{
 		Name:   name,
@@ -82,6 +106,7 @@ func LogUint64(name string, value uint64) LogParam {
 	}
 }
 
+// LogObject ...
 func LogObject(name string, value interface{}) LogParam {
 	return LogParam{
 		Name:   name,
@@ -90,35 +115,35 @@ func LogObject(name string, value interface{}) LogParam {
 	}
 }
 
-//Log is a generic interface for logging FIX messages and events.
+// Log is a generic interface for logging FIX messages and events.
 type Log interface {
-	//log incoming fix message
+	// OnIncoming log incoming fix message.
 	OnIncoming([]byte)
 
-	//log outgoing fix message
+	// OnOutgoing log outgoing fix message.
 	OnOutgoing([]byte)
 
-	//log fix event
+	// OnEvent log fix event.
 	OnEvent(string)
 
-	//log fix event according to format specifier
+	// OnEventf log fix event according to format specifier.
 	OnEventf(string, ...interface{})
 
-	//log fix error event
+	// OnErrorEvent log fix error event
 	OnErrorEvent(string, error)
 
-	//log fix event according to logging parameter
+	// OnEventParams log fix event according to logging parameter
 	OnEventParams(string, ...LogParam)
 
-	//log fix error event according to logging parameter
+	// OnErrorEventParams log fix error event according to logging parameter
 	OnErrorEventParams(string, error, ...LogParam)
 }
 
-//The LogFactory interface creates global and session specific Log instances
+// The LogFactory interface creates global and session specific Log instances.
 type LogFactory interface {
-	//global log
+	// Create global log.
 	Create() (Log, error)
 
-	//session specific log
+	// CreateSessionLog session specific log.
 	CreateSessionLog(sessionID SessionID) (Log, error)
 }

@@ -1,3 +1,18 @@
+// Copyright (c) quickfixengine.org  All rights reserved.
+//
+// This file may be distributed under the terms of the quickfixengine.org
+// license as defined by quickfixengine.org and appearing in the file
+// LICENSE included in the packaging of this file.
+//
+// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
+// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE.
+//
+// See http://www.quickfixengine.org/LICENSE for licensing information.
+//
+// Contact ask@quickfixengine.org if any conditions of this licensing
+// are not clear to you.
+
 package quickfix
 
 import (
@@ -40,12 +55,12 @@ type fileStore struct {
 	*messageBuilder
 }
 
-// NewFileStoreFactory returns a file-based implementation of MessageStoreFactory
+// NewFileStoreFactory returns a file-based implementation of MessageStoreFactory.
 func NewFileStoreFactory(settings *Settings) MessageStoreFactory {
 	return fileStoreFactory{settings: settings}
 }
 
-// Create creates a new FileStore implementation of the MessageStore interface
+// Create creates a new FileStore implementation of the MessageStore interface.
 func (f fileStoreFactory) Create(sessionID SessionID) (msgStore MessageStore, err error) {
 	var dirname string
 
@@ -95,7 +110,7 @@ func newFileStore(sessionID SessionID, dirname string) (*fileStore, error) {
 	return store, nil
 }
 
-// Reset deletes the store files and sets the seqnums back to 1
+// Reset deletes the store files and sets the seqnums back to 1.
 func (store *fileStore) Reset() error {
 	if store.isClosed {
 		return ErrAccessToClosedStore
@@ -125,7 +140,7 @@ func (store *fileStore) Reset() error {
 	return store.Refresh()
 }
 
-// Refresh closes the store files and then reloads from them
+// Refresh closes the store files and then reloads from them.
 func (store *fileStore) Refresh() (err error) {
 	if store.isClosed {
 		return ErrAccessToClosedStore
@@ -253,17 +268,17 @@ func (store *fileStore) setSeqNum(f *os.File, seqNum int) error {
 	return nil
 }
 
-// NextSenderMsgSeqNum returns the next MsgSeqNum that will be sent
+// NextSenderMsgSeqNum returns the next MsgSeqNum that will be sent.
 func (store *fileStore) NextSenderMsgSeqNum() int {
 	return store.cache.NextSenderMsgSeqNum()
 }
 
-// NextTargetMsgSeqNum returns the next MsgSeqNum that should be received
+// NextTargetMsgSeqNum returns the next MsgSeqNum that should be received.
 func (store *fileStore) NextTargetMsgSeqNum() int {
 	return store.cache.NextTargetMsgSeqNum()
 }
 
-// SetNextSenderMsgSeqNum sets the next MsgSeqNum that will be sent
+// SetNextSenderMsgSeqNum sets the next MsgSeqNum that will be sent.
 func (store *fileStore) SetNextSenderMsgSeqNum(next int) error {
 	if err := store.cache.SetNextSenderMsgSeqNum(next); err != nil {
 		return errors.Wrap(err, "cache")
@@ -271,7 +286,7 @@ func (store *fileStore) SetNextSenderMsgSeqNum(next int) error {
 	return store.setSeqNum(store.senderSeqNumsFile, next)
 }
 
-// SetNextTargetMsgSeqNum sets the next MsgSeqNum that should be received
+// SetNextTargetMsgSeqNum sets the next MsgSeqNum that should be received.
 func (store *fileStore) SetNextTargetMsgSeqNum(next int) error {
 	if err := store.cache.SetNextTargetMsgSeqNum(next); err != nil {
 		return errors.Wrap(err, "cache")
@@ -279,7 +294,7 @@ func (store *fileStore) SetNextTargetMsgSeqNum(next int) error {
 	return store.setSeqNum(store.targetSeqNumsFile, next)
 }
 
-// IncrNextSenderMsgSeqNum increments the next MsgSeqNum that will be sent
+// IncrNextSenderMsgSeqNum increments the next MsgSeqNum that will be sent.
 func (store *fileStore) IncrNextSenderMsgSeqNum() error {
 	if err := store.cache.IncrNextSenderMsgSeqNum(); err != nil {
 		return errors.Wrap(err, "cache")
@@ -287,7 +302,7 @@ func (store *fileStore) IncrNextSenderMsgSeqNum() error {
 	return store.setSeqNum(store.senderSeqNumsFile, store.cache.NextSenderMsgSeqNum())
 }
 
-// IncrNextTargetMsgSeqNum increments the next MsgSeqNum that should be received
+// IncrNextTargetMsgSeqNum increments the next MsgSeqNum that should be received.
 func (store *fileStore) IncrNextTargetMsgSeqNum() error {
 	if err := store.cache.IncrNextTargetMsgSeqNum(); err != nil {
 		return errors.Wrap(err, "cache")
@@ -295,7 +310,7 @@ func (store *fileStore) IncrNextTargetMsgSeqNum() error {
 	return store.setSeqNum(store.targetSeqNumsFile, store.cache.NextTargetMsgSeqNum())
 }
 
-// CreationTime returns the creation time of the store
+// CreationTime returns the creation time of the store.
 func (store *fileStore) CreationTime() time.Time {
 	return store.cache.CreationTime()
 }
@@ -304,18 +319,16 @@ func (store *fileStore) SaveMessage(seqNum int, msg []byte) error {
 	if store.isClosed || store.bodyFile == nil {
 		return ErrAccessToClosedStore
 	}
-	offset, err := store.bodyFile.Seek(0, os.SEEK_END)
+	offset, err := store.bodyFile.Seek(0, io.SeekEnd)
 	if err != nil {
 		return fmt.Errorf("unable to seek to end of file: %s: %s", store.bodyFname, err.Error())
 	}
-	if _, err := store.headerFile.Seek(0, os.SEEK_END); err != nil {
+	if _, err := store.headerFile.Seek(0, io.SeekEnd); err != nil {
 		return fmt.Errorf("unable to seek to end of file: %s: %s", store.headerFname, err.Error())
 	}
 	if _, err := fmt.Fprintf(store.headerFile, "%d,%d,%d\n", seqNum, offset, len(msg)); err != nil {
 		return fmt.Errorf("unable to write to file: %s: %s", store.headerFname, err.Error())
 	}
-
-	store.offsets[seqNum] = msgDef{offset: offset, size: len(msg)}
 
 	if _, err := store.bodyFile.Write(msg); err != nil {
 		return fmt.Errorf("unable to write to file: %s: %s", store.bodyFname, err.Error())
@@ -326,7 +339,17 @@ func (store *fileStore) SaveMessage(seqNum int, msg []byte) error {
 	if err := store.headerFile.Sync(); err != nil {
 		return fmt.Errorf("unable to flush file: %s: %s", store.headerFname, err.Error())
 	}
+
+	store.offsets[seqNum] = msgDef{offset: offset, size: len(msg)}
 	return nil
+}
+
+func (store *fileStore) SaveMessageAndIncrNextSenderMsgSeqNum(seqNum int, msg []byte) error {
+	err := store.SaveMessage(seqNum, msg)
+	if err != nil {
+		return err
+	}
+	return store.IncrNextSenderMsgSeqNum()
 }
 
 func (store *fileStore) getMessage(seqNum int) (msg []byte, found bool, err error) {
@@ -375,7 +398,7 @@ func (store *fileStore) SaveMessageWithTx(messageBuildData *BuildMessageInput) (
 	return
 }
 
-// Close closes the store's files
+// Close closes the store's files.
 func (store *fileStore) Close() error {
 	store.isClosed = true
 	return store.close()

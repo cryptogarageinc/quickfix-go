@@ -1,3 +1,18 @@
+// Copyright (c) quickfixengine.org  All rights reserved.
+//
+// This file may be distributed under the terms of the quickfixengine.org
+// license as defined by quickfixengine.org and appearing in the file
+// LICENSE included in the packaging of this file.
+//
+// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
+// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE.
+//
+// See http://www.quickfixengine.org/LICENSE for licensing information.
+//
+// Contact ask@quickfixengine.org if any conditions of this licensing
+// are not clear to you.
+
 package quickfix
 
 import (
@@ -10,7 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// MessageStoreTestSuite is the suite of all tests that should be run against all MessageStore implementations
+// MessageStoreTestSuite is the suite of all tests that should be run against all MessageStore implementations.
 type MessageStoreTestSuite struct {
 	suite.Suite
 	msgStore MessageStore
@@ -21,7 +36,7 @@ func (suite *MessageStoreTestSuite) getTestName(t *testing.T) string {
 	return testNames[len(testNames)-1]
 }
 
-// MemoryStoreTestSuite runs all tests in the MessageStoreTestSuite against the MemoryStore implementation
+// MemoryStoreTestSuite runs all tests in the MessageStoreTestSuite against the MemoryStore implementation.
 type MemoryStoreTestSuite struct {
 	MessageStoreTestSuite
 }
@@ -125,22 +140,22 @@ func (suite *MessageStoreTestSuite) TestMessageStore_SaveMessage_GetMessage() {
 	assert.Equal(t, expectedMsgsBySeqNum[2], string(actualMsgs[2]))
 }
 
-func (suite *MessageStoreTestSuite) TestMessageStore_GetMessages_EmptyStore() {
+func (s *MessageStoreTestSuite) TestMessageStore_GetMessages_EmptyStore() {
 	// When messages are retrieved from an empty store
-	messages, err := suite.msgStore.GetMessages(1, 2)
-	require.Nil(suite.T(), err)
+	messages, err := s.msgStore.GetMessages(1, 2)
+	require.Nil(s.T(), err)
 
 	// Then no messages should be returned
-	require.Empty(suite.T(), messages, "Did not expect messages from empty store")
+	require.Empty(s.T(), messages, "Did not expect messages from empty store")
 }
 
-func (suite *MessageStoreTestSuite) TestMessageStore_GetMessages_VariousRanges() {
-	t := suite.T()
+func (s *MessageStoreTestSuite) TestMessageStore_GetMessages_VariousRanges() {
+	t := s.T()
 
 	// Given the following saved messages
-	require.Nil(t, suite.msgStore.SaveMessage(1, []byte("hello")))
-	require.Nil(t, suite.msgStore.SaveMessage(2, []byte("cruel")))
-	require.Nil(t, suite.msgStore.SaveMessage(3, []byte("world")))
+	require.Nil(t, s.msgStore.SaveMessage(1, []byte("hello")))
+	require.Nil(t, s.msgStore.SaveMessage(2, []byte("cruel")))
+	require.Nil(t, s.msgStore.SaveMessage(3, []byte("world")))
 
 	// When the following requests are made to the store
 	var testCases = []struct {
@@ -160,7 +175,7 @@ func (suite *MessageStoreTestSuite) TestMessageStore_GetMessages_VariousRanges()
 
 	// Then the returned messages should be
 	for _, tc := range testCases {
-		actualMsgs, err := suite.msgStore.GetMessages(tc.beginSeqNo, tc.endSeqNo)
+		actualMsgs, err := s.msgStore.GetMessages(tc.beginSeqNo, tc.endSeqNo)
 		require.Nil(t, err)
 		require.Len(t, actualMsgs, len(tc.expectedBytes))
 		for i, expectedMsg := range tc.expectedBytes {

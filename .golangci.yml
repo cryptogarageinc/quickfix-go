@@ -1,22 +1,45 @@
 service:
-  golangci-lint-version: 1.48.0
+  golangci-lint-version: 1.52.2
 run:
   deadline: 30m
   skip-dirs:
     - cover
     - fix42
     - fix44
+    - enum
+    - field
   modules-download-mode: readonly
+
+#--timeout=10m --skip-dirs=fix42,fix44 --exclude="Error return value of .(store.cache.*|suite.msgStore.*). is not checke"
 
 issues:
   exclude-use-default: false
   exclude-rules:
     - linters:
         - errcheck
-      text: " is not checke"
+      text: " is not check"
 
 linters:
   enable:
     - exportloopref
+    - dupl
+    - gofmt
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - unused
+    - staticcheck
+    - godot
+#    - revive
+#    - goimports
   disable:
     - structcheck
+
+linters-settings:
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: github.com/cryptogarageinc/quickfix-go
+  dupl:
+    threshold: 400

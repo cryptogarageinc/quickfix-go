@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -58,7 +59,8 @@ func (e *EchoApplication) processMsg(msg *quickfix.Message, sessionID quickfix.S
 		}
 
 		sessionOrderID := sessionID.String() + orderID.String()
-		if possResend.FIXBoolean {
+
+		if bytes.Equal(possResend.Write(), []byte("Y")) {
 			if e.OrderIds[sessionOrderID] {
 				return nil
 			}
@@ -68,7 +70,7 @@ func (e *EchoApplication) processMsg(msg *quickfix.Message, sessionID quickfix.S
 	}
 
 	reply := copyMessage(msg)
-	if possResend.FIXBoolean {
+	if bytes.Equal(possResend.Write(), []byte("Y")) {
 		reply.Header.Set(possResend)
 	}
 
@@ -110,6 +112,7 @@ func main() {
 	router.AddRoute(quickfix.ApplVerIDFIX50SP1, "d", app.processMsg)
 	router.AddRoute(quickfix.ApplVerIDFIX50SP2, "d", app.processMsg)
 
+	fmt.Println("starting test server")
 	cfg, err := os.Open(os.Args[1])
 	if err != nil {
 		fmt.Printf("Error opening %v, %v\n", os.Args[1], err)
@@ -143,6 +146,7 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
 	<-interrupt
+	fmt.Println("stopping test server")
 
 	acceptor.Stop()
 }

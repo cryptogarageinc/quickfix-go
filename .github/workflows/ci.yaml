@@ -12,34 +12,36 @@ on:
       - master
       - main
       - develop
+
+permissions:
+  contents: read
+
 jobs:
   golangci:
-    name: lint
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
+    name: Linter
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout source code
+        uses: actions/checkout@v3
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: reviewdog/action-golangci-lint@v2
         with:
-          version: v1.48.0
-          args: --timeout=10m --skip-dirs=fix42,fix44 --exclude="Error return value of .(store.cache.*|suite.msgStore.*). is not checke"
+          golangci_lint_version: v1.52.2
 
   build:
+    timeout-minutes: 30
     name: build
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        go: [1.16.x, 1.18.x]
+        go: ['~1.18.0', '~1.19.0', '~1.20.0']
         fix-version:
-#          - FIX_TEST=
-#          - FIX_TEST=fix40
-#          - FIX_TEST=fix41
-          - FIX_TEST=fix42
-#          - FIX_TEST=fix43
-          - FIX_TEST=fix44
-#          - FIX_TEST=fix50
-#          - FIX_TEST=fix50sp1
-#          - FIX_TEST=fix50sp2
+          - ''
+          - fix42
+          - fix44
     steps:
       - name: Setup
         uses: actions/setup-go@v3
@@ -47,6 +49,10 @@ jobs:
           go-version: ${{ matrix.go }}
       - name: Check out source
         uses: actions/checkout@v3
+      - name: Install ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
       - uses: actions/cache@v3
         with:
           path: |
@@ -59,15 +65,14 @@ jobs:
       - name: mod download
         run: go mod download
 
-      - name: Run Mongo
-        run: docker compose up -d mongo
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@v1
+        with:
+          mongodb-replica-set: replicaset
 
       - name: Test
         env:
-          GO111MODULE: "on"
-          MONGODB_TEST_CXN: "mongodb://localhost:27017/"
-        run: make generate; if [ -z "$FIX_TEST" ]; then make build; make; else make build_accept; make $FIX_TEST; fi
-
-      - name: after test
-        if: always()
-        run: docker compose down
+          GO111MODULE: on
+          MONGODB_TEST_CXN: mongodb://localhost:27017
+          FIX_TEST: ${{ matrix.fix-version }}
+        run: if [ -z $FIX_TEST ]; then make build-src && make test-ci; else make generate-ci && make build && make $FIX_TEST; fi

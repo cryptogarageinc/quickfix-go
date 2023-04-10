@@ -106,7 +106,7 @@ To run acceptance tests,
         make generate
 
 		# build acceptance test rig
-		make build_accept
+		make build-test-srv
 
 		# run acceptance tests
 		make accept

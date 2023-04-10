@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// BuildMessageInput stores for building message data
+// BuildMessageInput stores for building message data.
 type BuildMessageInput struct {
 	Msg                          *Message
 	InReplyTo                    *Message
@@ -13,7 +13,7 @@ type BuildMessageInput struct {
 	IsResetSeqNum                bool
 }
 
-// BuildMessageOutput stores build message output data
+// BuildMessageOutput stores build message output data.
 type BuildMessageOutput struct {
 	MsgBytes  []byte
 	Msg       *Message
@@ -21,7 +21,7 @@ type BuildMessageOutput struct {
 	SentReset bool
 }
 
-// MsgSeqNumCursor interface provides methods for referencing/resetting the SeqNum position
+// MsgSeqNumCursor interface provides methods for referencing/resetting the SeqNum position.
 type MsgSeqNumCursor interface {
 	NextSenderMsgSeqNum() int
 	NextTargetMsgSeqNum() int
@@ -37,6 +37,7 @@ func newMessageBuilder(store MsgSeqNumCursor) *messageBuilder {
 	return &messageBuilder{store}
 }
 
+// BuildMessage ...
 func (m *messageBuilder) BuildMessage(bd *BuildMessageInput) (output *BuildMessageOutput, err error) {
 	if m == nil || m.cursor == nil {
 		err = errors.New("failed to initialize. please to set cursor")

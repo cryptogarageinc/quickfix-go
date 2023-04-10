@@ -2,6 +2,9 @@ version: '3.8'
 
 services:
   mongo:
-    image: mongo:5
+    image: bitnami/mongodb:latest
     ports:
-      - "27017:27017"
+      - 27017:27017
+    environment:
+      MONGODB_REPLICA_SET_MODE: primary
+      ALLOW_EMPTY_PASSWORD: 'yes'

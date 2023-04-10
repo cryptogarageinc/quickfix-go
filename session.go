@@ -1,3 +1,18 @@
+// Copyright (c) quickfixengine.org  All rights reserved.
+//
+// This file may be distributed under the terms of the quickfixengine.org
+// license as defined by quickfixengine.org and appearing in the file
+// LICENSE included in the packaging of this file.
+//
+// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
+// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE.
+//
+// See http://www.quickfixengine.org/LICENSE for licensing information.
+//
+// Contact ask@quickfixengine.org if any conditions of this licensing
+// are not clear to you.
+
 package quickfix
 
 import (
@@ -11,7 +26,7 @@ import (
 	"github.com/cryptogarageinc/quickfix-go/internal"
 )
 
-//The Session is the primary FIX abstraction for message communication
+// The Session is the primary FIX abstraction for message communication.
 type session struct {
 	store MessageStore
 
@@ -21,10 +36,10 @@ type session struct {
 	messageOut chan<- []byte
 	messageIn  <-chan fixIn
 
-	//application messages are queued up for send here
+	// Application messages are queued up for send here.
 	toSend [][]byte
 
-	//mutex for access to toSend
+	// Mutex for access to toSend.
 	sendMutex sync.Mutex
 
 	sessionEvent chan internal.Event
@@ -35,7 +50,7 @@ type session struct {
 	stateTimer *internal.EventTimer
 	peerTimer  *internal.EventTimer
 	sentReset  bool
-	stopOnce sync.Once
+	stopOnce   sync.Once
 
 	targetDefaultApplVerID string
 
@@ -62,8 +77,8 @@ func (s *session) logError(msg string, err error) {
 	s.log.OnErrorEvent(msg, err)
 }
 
-//TargetDefaultApplicationVersionID returns the default application version ID for messages received by this version.
-//Applicable for For FIX.T.1 sessions.
+// TargetDefaultApplicationVersionID returns the default application version ID for messages received by this version.
+// Applicable for For FIX.T.1 sessions.
 func (s *session) TargetDefaultApplicationVersionID() string {
 	return s.targetDefaultApplVerID
 }
@@ -88,7 +103,7 @@ func (s *session) connect(msgIn <-chan fixIn, msgOut chan<- []byte) error {
 type stopReq struct{}
 
 func (s *session) stop() {
-	//stop once
+	// Stop once.
 	s.stopOnce.Do(func() {
 		s.admin <- stopReq{}
 	})
@@ -203,7 +218,7 @@ func (s *session) resend(msg *Message) bool {
 	return s.application.ToApp(msg, s.sessionID) == nil
 }
 
-//queueForSend will validate, persist, and queue the message for send
+// queueForSend will validate, persist, and queue the message for send.
 func (s *session) queueForSend(msg *Message) error {
 	s.sendMutex.Lock()
 	defer s.sendMutex.Unlock()
@@ -226,7 +241,7 @@ func (s *session) queueForSend(msg *Message) error {
 	return nil
 }
 
-//send will validate, persist, queue the message. If the session is logged on, send all messages in the queue
+// send will validate, persist, queue the message. If the session is logged on, send all messages in the queue.
 func (s *session) send(msg *Message) error {
 	return s.sendInReplyTo(msg, nil)
 }
@@ -249,7 +264,7 @@ func (s *session) sendInReplyTo(msg *Message, inReplyTo *Message) error {
 	return nil
 }
 
-//dropAndReset will drop the send queue and reset the message store
+// dropAndReset will drop the send queue and reset the message store.
 func (s *session) dropAndReset() error {
 	s.sendMutex.Lock()
 	defer s.sendMutex.Unlock()
@@ -258,7 +273,7 @@ func (s *session) dropAndReset() error {
 	return s.store.Reset()
 }
 
-//dropAndSend will validate and persist the message, then drops the send queue and sends the message.
+// dropAndSend will validate and persist the message, then drops the send queue and sends the message.
 func (s *session) dropAndSend(msg *Message) error {
 	return s.dropAndSendInReplyTo(msg, nil)
 }
@@ -390,7 +405,7 @@ func (s *session) sendResendRequest(beginSeq, endSeq int) (nextState resendState
 }
 
 func (s *session) handleLogon(msg *Message) error {
-	//Grab default app ver id from fixt.1.1 logon
+	// Grab default app ver id from fixt.1.1 logon.
 	if s.sessionID.BeginString == BeginStringFIXT11 {
 		var targetApplVerID FIXString
 
@@ -452,7 +467,13 @@ func (s *session) handleLogon(msg *Message) error {
 
 	s.peerTimer.Reset(time.Duration(float64(1.2) * float64(s.HeartBtInt)))
 	s.application.OnLogon(s.sessionID)
-	s.notifyLogonEvent <- struct{}{}
+
+	// for WaitForLogon.
+	// If WaitForLogon is not used, it will remain in the buffer, in which case it will not be sent.
+	select {
+	case s.notifyLogonEvent <- struct{}{}:
+	default:
+	}
 
 	if err := s.checkTargetTooHigh(msg); err != nil {
 		return err
@@ -637,7 +658,7 @@ func (s *session) doReject(msg *Message, rej MessageRejectError) error {
 			default:
 				reply.Body.SetField(tagSessionRejectReason, FIXInt(rej.RejectReason()))
 			case rej.RejectReason() > rejectReasonInvalidMsgType && s.sessionID.BeginString == BeginStringFIX42:
-				//fix42 knows up to invalid msg type
+				// Fix42 knows up to invalid msg type.
 			}
 
 			if refTagID := rej.RefTagID(); refTagID != nil {
@@ -745,26 +766,34 @@ func (s *session) onAdmin(msg interface{}) {
 
 func (s *session) run() {
 	s.Start(s)
-
-	// https://github.com/quickfixgo/quickfix/pull/452
-	done := make(chan struct{})
-
+	var stopChan = make(chan struct{})
 	s.stateTimer = internal.NewEventTimer(func() {
 		select {
-		case <-done:
+		// Deadlock in write to chan s.sessionEvent after s.Stopped()==true and end of loop session.go:766 because no reader of chan s.sessionEvent.
 		case s.sessionEvent <- internal.NeedHeartbeat:
+		case <-stopChan:
 		}
 	})
 	s.peerTimer = internal.NewEventTimer(func() {
 		select {
-		case <-done:
+		// Deadlock in write to chan s.sessionEvent after s.Stopped()==true and end of loop session.go:766 because no reader of chan s.sessionEvent.
 		case s.sessionEvent <- internal.PeerTimeout:
+		case <-stopChan:
 		}
+
 	})
+
+	// Without this sleep the ticker will be aligned at the millisecond which
+	// corresponds to the creation of the session. If the session creation
+	// happened at 07:00:00.678 and the session StartTime is 07:30:00, any new
+	// connection received between 07:30:00.000 and 07:30:00.677 will be
+	// rejected. Aligning the ticker with a round second fixes that.
+	time.Sleep(time.Until(time.Now().Truncate(time.Second).Add(time.Second)))
+
 	ticker := time.NewTicker(time.Second)
 
 	defer func() {
-		close(done)
+		close(stopChan)
 		s.stateTimer.Stop()
 		s.peerTimer.Stop()
 		ticker.Stop()

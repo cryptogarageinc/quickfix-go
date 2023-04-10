@@ -1,3 +1,18 @@
+// Copyright (c) quickfixengine.org  All rights reserved.
+//
+// This file may be distributed under the terms of the quickfixengine.org
+// license as defined by quickfixengine.org and appearing in the file
+// LICENSE included in the packaging of this file.
+//
+// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING
+// THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE.
+//
+// See http://www.quickfixengine.org/LICENSE for licensing information.
+//
+// Contact ask@quickfixengine.org if any conditions of this licensing
+// are not clear to you.
+
 package quickfix
 
 import (
@@ -33,12 +48,12 @@ type dbSettings struct {
 	connMaxOpen     int
 }
 
-// NewSQLStoreFactory returns a sql-based implementation of MessageStoreFactory
+// NewSQLStoreFactory returns a sql-based implementation of MessageStoreFactory.
 func NewSQLStoreFactory(settings *Settings) MessageStoreFactory {
 	return sqlStoreFactory{settings: settings}
 }
 
-// Create creates a new SQLStore implementation of the MessageStore interface
+// Create creates a new SQLStore implementation of the MessageStore interface.
 func (f sqlStoreFactory) Create(sessionID SessionID) (msgStore MessageStore, err error) {
 	var sqlDriver string
 	var sqlDataSourceName string
@@ -126,7 +141,7 @@ func newSQLStore(sessionID SessionID, driver string, dataSourceName string, dbs 
 	return store, nil
 }
 
-// Reset deletes the store records and sets the seqnums back to 1
+// Reset deletes the store records and sets the seqnums back to 1.
 func (store *sqlStore) Reset() (err error) {
 	if store.db == nil {
 		return ErrAccessToClosedStore
@@ -161,7 +176,7 @@ func (store *sqlStore) reset(tx *gorm.DB) (err error) {
 		s.TargetCompID, s.TargetSubID, s.TargetLocationID).Error
 }
 
-// Refresh reloads the store from the database
+// Refresh reloads the store from the database.
 func (store *sqlStore) Refresh() (err error) {
 	if err = store.cache.Reset(); err != nil {
 		return err
@@ -214,17 +229,17 @@ func (store *sqlStore) populateCache() (err error) {
 		s.TargetCompID, s.TargetSubID, s.TargetLocationID).Error
 }
 
-// NextSenderMsgSeqNum returns the next MsgSeqNum that will be sent
+// NextSenderMsgSeqNum returns the next MsgSeqNum that will be sent.
 func (store *sqlStore) NextSenderMsgSeqNum() int {
 	return store.cache.NextSenderMsgSeqNum()
 }
 
-// NextTargetMsgSeqNum returns the next MsgSeqNum that should be received
+// NextTargetMsgSeqNum returns the next MsgSeqNum that should be received.
 func (store *sqlStore) NextTargetMsgSeqNum() int {
 	return store.cache.NextTargetMsgSeqNum()
 }
 
-// SetNextSenderMsgSeqNum sets the next MsgSeqNum that will be sent
+// SetNextSenderMsgSeqNum sets the next MsgSeqNum that will be sent.
 func (store *sqlStore) SetNextSenderMsgSeqNum(next int) error {
 	if store.db == nil {
 		return ErrAccessToClosedStore
@@ -242,7 +257,7 @@ func (store *sqlStore) SetNextSenderMsgSeqNum(next int) error {
 	return store.cache.SetNextSenderMsgSeqNum(next)
 }
 
-// SetNextTargetMsgSeqNum sets the next MsgSeqNum that should be received
+// SetNextTargetMsgSeqNum sets the next MsgSeqNum that should be received.
 func (store *sqlStore) SetNextTargetMsgSeqNum(next int) error {
 	if store.db == nil {
 		return ErrAccessToClosedStore
@@ -260,19 +275,19 @@ func (store *sqlStore) SetNextTargetMsgSeqNum(next int) error {
 	return store.cache.SetNextTargetMsgSeqNum(next)
 }
 
-// IncrNextSenderMsgSeqNum increments the next MsgSeqNum that will be sent
+// IncrNextSenderMsgSeqNum increments the next MsgSeqNum that will be sent.
 func (store *sqlStore) IncrNextSenderMsgSeqNum() error {
 	store.cache.IncrNextSenderMsgSeqNum()
 	return store.SetNextSenderMsgSeqNum(store.cache.NextSenderMsgSeqNum())
 }
 
-// IncrNextTargetMsgSeqNum increments the next MsgSeqNum that should be received
+// IncrNextTargetMsgSeqNum increments the next MsgSeqNum that should be received.
 func (store *sqlStore) IncrNextTargetMsgSeqNum() error {
 	store.cache.IncrNextTargetMsgSeqNum()
 	return store.SetNextTargetMsgSeqNum(store.cache.NextTargetMsgSeqNum())
 }
 
-// CreationTime returns the creation time of the store
+// CreationTime returns the creation time of the store.
 func (store *sqlStore) CreationTime() time.Time {
 	return store.cache.CreationTime()
 }
@@ -293,6 +308,50 @@ func (store *sqlStore) SaveMessage(seqNum int, msg []byte) error {
 		s.BeginString, s.Qualifier,
 		s.SenderCompID, s.SenderSubID, s.SenderLocationID,
 		s.TargetCompID, s.TargetSubID, s.TargetLocationID).Error
+}
+
+func (store *sqlStore) SaveMessageAndIncrNextSenderMsgSeqNum(seqNum int, msg []byte) error {
+	if store.db == nil {
+		return ErrAccessToClosedStore
+	}
+	s := store.sessionID
+
+	err := store.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec(`INSERT INTO messages (
+			msgseqnum, message,
+			beginstring, session_qualifier,
+			sendercompid, sendersubid, senderlocid,
+			targetcompid, targetsubid, targetlocid)
+			VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			seqNum, string(msg),
+			s.BeginString, s.Qualifier,
+			s.SenderCompID, s.SenderSubID, s.SenderLocationID,
+			s.TargetCompID, s.TargetSubID, s.TargetLocationID).Error; err != nil {
+			return err
+		}
+
+		checkSeqNum := store.cache.NextSenderMsgSeqNum()
+		if seqNum != checkSeqNum {
+			return errors.New("internal error: unmatch seqnum")
+		}
+		nextSeqNum := seqNum + 1
+		if err := tx.Exec(`UPDATE sessions SET outgoing_seqnum = ?
+			WHERE beginstring = ? AND session_qualifier = ?
+			AND sendercompid = ? AND sendersubid = ? AND senderlocid = ?
+			AND targetcompid = ? AND targetsubid = ? AND targetlocid = ?`,
+			nextSeqNum, s.BeginString, s.Qualifier,
+			s.SenderCompID, s.SenderSubID, s.SenderLocationID,
+			s.TargetCompID, s.TargetSubID, s.TargetLocationID).Error; err != nil {
+			return err
+		}
+		return store.cache.SetNextSenderMsgSeqNum(nextSeqNum)
+	})
+	if err != nil {
+		_ = store.Refresh()
+		// Response should also be returned in case of an error.
+		return err
+	}
+	return nil
 }
 
 func (store *sqlStore) GetMessages(beginSeqNum, endSeqNum int) ([][]byte, error) {
@@ -409,7 +468,7 @@ func (store *sqlStore) SaveMessageWithTx(messageBuildData *BuildMessageInput) (o
 	return output, nil
 }
 
-// Close closes the store's database connection
+// Close closes the store's database connection.
 func (store *sqlStore) Close() error {
 	if store.db != nil {
 		store.db.Close()
