@@ -29,7 +29,7 @@ jobs:
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@v2
         with:
-          golangci_lint_version: v1.52.2
+          golangci_lint_version: v1.53.3
 
   build:
     timeout-minutes: 30
@@ -37,30 +37,22 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        go: ['~1.18.0', '~1.19.0', '~1.20.0']
+        go: ['~1.20.0', '~1.21.0']
         fix-version:
           - ''
           - fix42
           - fix44
     steps:
-      - name: Setup
-        uses: actions/setup-go@v3
-        with:
-          go-version: ${{ matrix.go }}
       - name: Check out source
         uses: actions/checkout@v3
+      - name: Setup
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go }}
       - name: Install ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.0'
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
 
       - name: mod download
         run: go mod download
