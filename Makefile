@@ -1,3 +1,6 @@
+golangci_version = v1.53.3
+goimports_version = v0.12.0
+yamlfmt_version = v0.9.0
 
 all: vet test
 
@@ -20,7 +23,8 @@ generate-dist-win:
 	go run cmd/generate-fix/generate-fix.go spec/FIX42.xml spec/FIX44.xml
 
 format:
-	go run golang.org/x/tools/cmd/goimports@v0.7.0 -w .
+	go run golang.org/x/tools/cmd/goimports@${goimports_version} -w .
+	go run github.com/google/yamlfmt/cmd/yamlfmt@${yamlfmt_version}
 
 fmt:
 	gofmt -l -w -s $(shell find . -type f -name '*.go')
@@ -31,10 +35,10 @@ vet:
 	go vet ./_test
 
 lint:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2 run
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@${golangci_version} run
 
 lint-fix:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2 run --fix
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@${golangci_version} run --fix
 
 test: 
 	MONGODB_TEST_CXN=mongodb://db:27017 go test -v -cover -p=1 -count=1 . ./datadictionary ./internal
