@@ -1,5 +1,5 @@
 service:
-  golangci-lint-version: 1.52.2
+  golangci-lint-version: 1.53.3
 run:
   deadline: 30m
   skip-dirs:
@@ -31,15 +31,15 @@ linters:
     - unused
     - staticcheck
     - godot
-#    - revive
-#    - goimports
+    - goimports
+    # - revive
   disable:
     - structcheck
 
 linters-settings:
   gofmt:
     simplify: true
-  goimports:
-    local-prefixes: github.com/cryptogarageinc/quickfix-go
+  #goimports:
+  #  local-prefixes: github.com/cryptogarageinc/quickfix-go
   dupl:
     threshold: 400
