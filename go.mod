@@ -1,6 +1,6 @@
 module github.com/cryptogarageinc/quickfix-go
 
-go 1.18
+go 1.21
 
 require (
 	github.com/armon/go-proxyproto v0.1.0
