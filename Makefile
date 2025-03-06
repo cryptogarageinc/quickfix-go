@@ -1,6 +1,7 @@
-golangci_version = v1.53.3
-goimports_version = v0.12.0
-yamlfmt_version = v0.9.0
+golangci_version = v1.64.6
+goimports_version = v0.31.0
+yamlfmt_version = v0.16.0
+govulncheck_version = v1.1.4
 
 all: vet test
 
@@ -27,18 +28,23 @@ format:
 	go run github.com/google/yamlfmt/cmd/yamlfmt@${yamlfmt_version}
 
 fmt:
-	gofmt -l -w -s $(shell find . -type f -name '*.go')
+	gofmt -l -w -s ./*.go ./*/*.go ./*/*/*.go
+
+#	gofmt -l -w -s $(shell find . -type f -name '*.go')
 
 vet:
 	go vet . ./config ./datadictionary ./enum ./field ./internal ./tag
 	go vet ./cmd/generate-fix ./cmd/generate-fix/internal
-	go vet ./_test
+	go vet ./_test/test-server
 
 lint:
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@${golangci_version} run
 
 lint-fix:
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@${golangci_version} run --fix
+
+vuln:
+	go run golang.org/x/vuln/cmd/govulncheck@${govulncheck_version} ./...
 
 test: 
 	MONGODB_TEST_CXN=mongodb://db:27017 go test -v -cover -p=1 -count=1 . ./datadictionary ./internal
