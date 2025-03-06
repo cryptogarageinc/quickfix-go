@@ -1,18 +1,18 @@
-service:
-  golangci-lint-version: 1.53.3
 run:
-  deadline: 30m
-  skip-dirs:
-    - cover
-    - fix42
-    - fix44
-    - enum
-    - field
+  timeout: 30m
   modules-download-mode: readonly
 
 #--timeout=10m --skip-dirs=fix42,fix44 --exclude="Error return value of .(store.cache.*|suite.msgStore.*). is not checke"
 
 issues:
+  exclude-dirs:
+    - cover
+    - fix42
+    - fix44
+    - enum
+    - enum/
+    - ./enum
+    - field
   exclude-use-default: false
   exclude-rules:
     - linters:
@@ -21,7 +21,7 @@ issues:
 
 linters:
   enable:
-    - exportloopref
+    - copyloopvar
     - dupl
     - gofmt
     - gosimple
@@ -33,8 +33,6 @@ linters:
     - godot
     - goimports
     # - revive
-  disable:
-    - structcheck
 
 linters-settings:
   gofmt:

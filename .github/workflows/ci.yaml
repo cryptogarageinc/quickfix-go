@@ -29,7 +29,7 @@ jobs:
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@v2
         with:
-          golangci_lint_version: v1.53.3
+          golangci_lint_version: v1.64.6
 
   build:
     timeout-minutes: 30
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        go: ['~1.21.0', '~1.22.0']
+        go: ['~1.23.0', '~1.24.0']
         fix-version:
           - ''
           - fix42
