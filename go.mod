@@ -7,7 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/armon/go-proxyproto v0.1.0
 	github.com/jinzhu/gorm v1.9.16
-	github.com/mattn/go-sqlite3 v1.14.30
+	github.com/mattn/go-sqlite3 v1.14.31
 	github.com/pkg/errors v0.9.1
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.10.0
