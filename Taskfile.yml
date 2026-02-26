@@ -1,0 +1,92 @@
+version: '3'
+
+vars:
+  GOIMPORTS_VERSION: v0.41.0
+  GOLANGCI_LINT_VERSION: v2.8.0
+  YAMLFMT_VERSION: v0.21.0
+  ACTIONLINT_VERSION: v1.7.10
+  GHALINT_VERSION: v1.5.5
+  PINACT_VERSION: v3.9.0
+  GOVULNCHECK_VERSION: latest
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  format-go:
+    desc: Format Go code with goimports
+    cmds:
+      - go run golang.org/x/tools/cmd/goimports@{{.GOIMPORTS_VERSION}} -w .
+
+  format-yaml:
+    desc: Format Yaml code with yamlfmt
+    cmds:
+      - go run github.com/google/yamlfmt/cmd/yamlfmt@{{.YAMLFMT_VERSION}}
+
+  lint-go:
+    desc: Run golangci-lint
+    cmds:
+      - go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}} run ./...
+
+  lint-go-fix:
+    desc: Run golangci-lint with auto-fix
+    cmds:
+      - go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}} run --fix ./...
+
+  lint-actions-actionlint:
+    desc: Run actionlint for GitHub Actions workflows
+    cmds:
+      - go run github.com/rhysd/actionlint/cmd/actionlint@{{.ACTIONLINT_VERSION}} -shellcheck= .github/workflows/*.yml
+
+  lint-actions-ghalint:
+    desc: Run ghalint for GitHub Actions workflows
+    cmds:
+      - go run github.com/suzuki-shunsuke/ghalint/cmd/ghalint@{{.GHALINT_VERSION}} run
+
+  lint-actions-pinact:
+    desc: Run pinact for GitHub Actions workflows
+    cmds:
+      - go run github.com/suzuki-shunsuke/pinact/v3/cmd/pinact@{{.PINACT_VERSION}} run
+
+  pinact-update:
+    desc: Run pinact for GitHub Actions workflows
+    cmds:
+      - go run github.com/suzuki-shunsuke/pinact/v3/cmd/pinact@{{.PINACT_VERSION}} run -u
+
+  lint-actions:
+    desc: Run all GitHub Actions workflow linters
+    cmds:
+      - task: lint-actions-actionlint
+      - task: lint-actions-ghalint
+
+  lint-actions-fix:
+    desc: Run all GitHub Actions workflow linters with auto-fix
+    cmds:
+      - task: lint-actions-pinact
+      - task: lint-actions-actionlint
+      - task: lint-actions-ghalint
+
+  vuln:
+    desc: Run vulnerability check with govulncheck
+    cmds:
+      - go run golang.org/x/vuln/cmd/govulncheck@{{.GOVULNCHECK_VERSION}} ./...
+
+  format:
+    desc: Run all formatters
+    cmds:
+      - task: format-go
+      - task: format-yaml
+
+  lint:
+    desc: Run all linters
+    cmds:
+      - task: lint-go
+      - task: lint-actions
+
+  lint-fix:
+    desc: Run all linters with auto-fix
+    cmds:
+      - task: lint-go-fix
+      - task: lint-actions-fix

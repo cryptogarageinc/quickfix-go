@@ -1,6 +1,6 @@
-golangci_version = v1.64.6
-goimports_version = v0.31.0
-yamlfmt_version = v0.16.0
+golangci_version = v2.8.0
+goimports_version = v0.41.0
+yamlfmt_version = v0.21.0
 govulncheck_version = v1.1.4
 
 all: vet test
@@ -38,10 +38,10 @@ vet:
 	go vet ./_test/test-server
 
 lint:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@${golangci_version} run
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${golangci_version} run
 
 lint-fix:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@${golangci_version} run --fix
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${golangci_version} run --fix
 
 vuln:
 	go run golang.org/x/vuln/cmd/govulncheck@${govulncheck_version} ./...

@@ -3,5 +3,28 @@ updates:
   - package-ecosystem: gomod
     directory: "/"
     schedule:
-      interval: daily
-    open-pull-requests-limit: 10
+      interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+  - package-ecosystem: github-actions
+    directories:
+      - '.github/**/*'
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      # 現状はベストなグルーピング指定が無いため、パターンで適度に分けて定義する
+      github:
+        patterns:
+          - "actions/*"
+      codeql:
+        patterns:
+          - "github/codeql-action/*"
+      dependencies:
+        patterns:
+          - "*"
