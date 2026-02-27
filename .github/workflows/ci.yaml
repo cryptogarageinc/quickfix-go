@@ -13,44 +13,50 @@ on:
       - main
       - develop
 
-permissions:
-  contents: read
-
 jobs:
   golangci:
     permissions:
       contents: read # for actions/checkout to fetch code
       pull-requests: read # for golangci/golangci-lint-action to fetch pull requests
+    timeout-minutes: 30
     name: Linter
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
-      - name: golangci-lint
-        uses: reviewdog/action-golangci-lint@v2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          golangci_lint_version: v1.64.6
+          persist-credentials: false
+      - name: golangci-lint
+        uses: reviewdog/action-golangci-lint@f9bba13753278f6a73b27a56a3ffb1bfda90ed71 # v2.8.0
+        with:
+          golangci_lint_version: v2.8.0
 
   build:
+    permissions:
+      contents: read
+      pull-requests: read
     timeout-minutes: 30
     name: build
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        go: ['~1.23.0', '~1.24.0']
+        go: ['~1.25.0', '~1.26.0']
         fix-version:
           - ''
           - fix42
           - fix44
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
       - name: Setup
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: ${{ matrix.go }}
       - name: Install ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@09a7688d3b55cf0e976497ff046b70949eeaccfd # v1.288.0
         with:
           ruby-version: '3.0'
 
@@ -58,7 +64,7 @@ jobs:
         run: go mod download
 
       - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@v1
+        uses: supercharge/mongodb-github-action@315db7fe45ac2880b7758f1933e6e5d59afd5e94 # 1.12.1
         with:
           mongodb-replica-set: replicaset
 

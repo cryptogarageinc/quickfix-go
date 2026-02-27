@@ -4,7 +4,7 @@ doublestar: true
 include:
   - '.github/**/*.{yaml,yml}'
   - './docker-*.{yaml,yml}'
-  - './.golangci.yml'
+  - './*.yml'
 
 formatter:
   # 使用するフォーマッター

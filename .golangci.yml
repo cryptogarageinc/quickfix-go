@@ -1,43 +1,52 @@
+version: "2"
+
 run:
   timeout: 30m
   modules-download-mode: readonly
 
-#--timeout=10m --skip-dirs=fix42,fix44 --exclude="Error return value of .(store.cache.*|suite.msgStore.*). is not checke"
-
-issues:
-  exclude-dirs:
-    - cover
-    - fix42
-    - fix44
-    - enum
-    - enum/
-    - ./enum
-    - field
-  exclude-use-default: false
-  exclude-rules:
-    - linters:
-        - errcheck
-      text: " is not check"
-
 linters:
+  exclusions:
+    paths:
+      - cover
+      - fix42
+      - fix44
+      - enum
+      - enum/
+      - ./enum
+      - field
+    rules:
+      - linters:
+          - errcheck
+        text: " is not check"
+  settings:
+    dupl:
+      threshold: 400
+  disable:
+    - staticcheck
   enable:
     - copyloopvar
     - dupl
-    - gofmt
-    - gosimple
     - govet
     - ineffassign
     - misspell
     - unused
-    - staticcheck
+    # - staticcheck
     - godot
-    - goimports
     # - revive
 
-linters-settings:
-  gofmt:
-    simplify: true
-  #goimports:
-  #  local-prefixes: github.com/cryptogarageinc/quickfix-go
-  dupl:
-    threshold: 400
+formatters:
+  exclusions:
+    paths:
+      - cover
+      - fix42
+      - fix44
+      - enum
+      - enum/
+      - ./enum
+      - field
+  settings:
+    gofmt:
+      simplify: true
+  enable:
+    - goimports
+    - gofmt
