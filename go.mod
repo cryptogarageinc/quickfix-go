@@ -1,6 +1,6 @@
 module github.com/cryptogarageinc/quickfix-go
 
-go 1.25
+go 1.25.0
 
 toolchain go1.25.7
 
@@ -12,7 +12,7 @@ require (
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.11.1
 	go.mongodb.org/mongo-driver v1.17.9
-	golang.org/x/net v0.50.0
+	golang.org/x/net v0.51.0
 )
 
 require (
