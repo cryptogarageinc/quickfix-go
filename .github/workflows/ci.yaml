@@ -20,7 +20,7 @@ jobs:
       pull-requests: read # for golangci/golangci-lint-action to fetch pull requests
     timeout-minutes: 30
     name: Linter
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout source code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -29,7 +29,7 @@ jobs:
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@c76cceaaab89abe74e649d2e34c6c9adc26662d2 # v2.10.0
         with:
-          golangci_lint_version: v2.8.0
+          golangci_lint_version: v2.13.2
 
   build:
     permissions:
@@ -37,10 +37,10 @@ jobs:
       pull-requests: read
     timeout-minutes: 30
     name: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
-        go: ['~1.25.0', '~1.26.0']
+        go: ['~1.26.0', '~1.27.0']
         fix-version:
           - ''
           - fix42

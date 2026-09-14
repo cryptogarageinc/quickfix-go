@@ -1,7 +1,7 @@
-golangci_version = v2.8.0
-goimports_version = v0.41.0
+golangci_version = v2.13.2
+goimports_version = v0.50.0
 yamlfmt_version = v0.21.0
-govulncheck_version = v1.1.4
+govulncheck_version = v1.8.0
 
 all: vet test
 
